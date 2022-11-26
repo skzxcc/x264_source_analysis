@@ -9,10 +9,10 @@
 
 ## 建议
 
-作者是使用Typora进行编辑，图片在github上面显示不出来，因此建议读者拉到本地使用Typora进行观看
+作者是使用Typora进行编辑，github/gitee上面可能有格式问题，因此建议读者拉到本地使用Typora进行观看
 
-或者直接看gitee这个仓库：https://gitee.com/skzxc7/x264-source-analysis
+github同步仓库：https://github.com/skzxcc/x264_source_analysis
+
+gitee同步仓库：https://gitee.com/skzxc7/x264-source-analysis
 
 
-
-**这些文章主要涉及的是x264源码的分析，不会对H264/AVC的标准做特别的说明**
