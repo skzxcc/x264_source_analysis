@@ -4,7 +4,27 @@
 
 所谓比特预测器就是根据现有的一些信息(如QP、SATD等)预测当前帧(宏块)编码后生成的比特大小，这部分的功能在x264整个码率控制模块尤为重要，因此将其单独作为一章进行讲解。(***比特预测器？ 姑且这么叫吧***)
 
-**比特预测器？ 更学术性的说法是“建立Bit-QP之间的关系模型“**
+**比特预测器？ 更学术性的说法是“建立Bit-QP之间的关系模型“**， 在x264里面确切的说是建立“**Bit-Qscale之间的关系模型**” （qscale与QP存在一对一的映射关系），所以下面的内容会直接用qscale来形容量化等级而不是QP
+
+
+
+```c++
+/* Terminology:
+ * qp = h.264's quantizer
+ * qscale = linearized quantizer = Lagrange multiplier
+ */
+// qp --->qscale关系式
+static inline float qp2qscale( float qp )
+{
+    return 0.85f * powf( 2.0f, ( qp - (12.0f + QP_BD_OFFSET) ) / 6.0f );
+}
+
+// qscale ----> qp关系式
+static inline float qscale2qp( float qscale )
+{
+    return (12.0f + QP_BD_OFFSET) + 6.0f * log2f( qscale/0.85f );
+}
+```
 
 
 
@@ -12,9 +32,9 @@
 
 ***首先我们来思考一下，一帧图像编码后的生成比特数的大小与什么相关？***
 
-我们肯定会想到与QP和图像复杂度相关，且QP越大比特数越小，复杂度越高比特数越大；即复杂度与比特数呈正相关，QP与比特数呈负相关。 
+我们肯定会想到与Qscale和图像复杂度相关，且Qscale越大比特数越小，复杂度越高比特数越大；即复杂度与比特数呈正相关，Qscale与比特数呈负相关。 
 
-假设比特数为bits，QP为q，图像复杂度为var，我们先写出一个简单的关系：
+假设比特数为bits，Qscale为q，图像复杂度为var，我们先写出一个简单的关系：
 $$
 bits = α * var / q + β / q
 $$
@@ -24,9 +44,9 @@ $$
 
 ### TEST:
 
-以上述公式为例，假设当前帧的复杂度为var(在x264以sad或则satd表示)，帧级QP为qp，预期的比特数为b1，实际的比特数为b2。
+以上述公式为例，假设当前帧的复杂度为var(在x264以sad或则satd表示)，帧级Qscale为q，预期的比特数为b1，实际的比特数为b2。
 
-**正推：**b1 = α * var / qp + β/qp;
+**正推：**b1 = α * var / q + β/q;
 
 由于b2与b1的值可能存在一定偏差的，所以需要调整α和β的值，新的值用于下一次的比特预测。
 
@@ -35,8 +55,8 @@ $$
 **反推：**
 
 ```tex
-new_α = (b2 * qp - β) / var; // b2、qp、β、var都是已知变量,计算得到新的α
-new_β = b2*qp - new_α*var;   // b2、new_α、var、qp都是已知变量,计算得到新的β
+new_α = (b2 * q - β) / var; // b2、q、β、var都是已知变量,计算得到新的α
+new_β = b2*q - new_α*var;   // b2、new_α、var、q都是已知变量,计算得到新的β
 α = new_α;  // 更新α
 β = new_β;  // 更新β
 ```
@@ -60,7 +80,7 @@ $$
 **predict_size**
 
 ```c++
-// 根据复杂度、QP获取预测的比特数
+// 根据复杂度、Qscale获取预测的比特数
 static float predict_size( predictor_t *p, float q, float var )
 {
     // 与上述公式一样
