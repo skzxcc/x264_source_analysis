@@ -117,7 +117,7 @@ http://git.videolan.org/git/x264.git
 
 ```shell
 mkdir bin
-./configure --prefix=./bin --enable-static --host=ming32
+./configure --prefix=./bin --enable-static --host=mingw32
 make
 make install
 ```
